@@ -1,0 +1,18 @@
+# Environment variables & secrets (DO NOT PUSH TO GITHUB)
+.env
+
+# Virtual Environment
+.venv/
+env/
+venv/
+
+# Python cache & build outputs
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE configs
+.vscode/
+.idea/
+.DS_Store
