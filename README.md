@@ -1,4 +1,4 @@
-# 🌱 Organic Farming RAG
+# 🌱 Organic Farming Assistant Using RAG
 
 A Retrieval-Augmented Generation (RAG) application that answers questions from the book:
 
