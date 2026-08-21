@@ -1,5 +1,7 @@
 # Environment variables & secrets (DO NOT PUSH TO GITHUB)
 .env
+.cache/
+.uv-cache/
 
 # Virtual Environment
 .venv/

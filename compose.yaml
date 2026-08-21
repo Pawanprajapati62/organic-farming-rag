@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${PORT:-8501}:8501"
+    env_file:
+      - .env
+    environment:
+      EMBEDDING_CACHE_DIR: /data/embeddings
+      VECTOR_DB_PATH: /data/vectorstore/chroma_db
+    volumes:
+      - rag-data:/data
+
+volumes:
+  rag-data:

@@ -1,0 +1,9 @@
+.git
+.env
+.venv/
+.cache/
+vectorstore/
+__pycache__/
+tests/
+*.py[cod]
+.streamlit/secrets.toml

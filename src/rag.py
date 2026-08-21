@@ -1,6 +1,8 @@
 import os
 from dotenv import load_dotenv
 
+load_dotenv()
+
 # Streamlit Cloud Secrets Fallback
 try:
     import streamlit as st
@@ -13,19 +15,48 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-load_dotenv()
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE_DIR, "vectorstore", "chroma_db")
+DB_PATH = os.getenv(
+    "VECTOR_DB_PATH", os.path.join(BASE_DIR, "vectorstore", "chroma_db")
+)
+EMBEDDING_MODEL = os.getenv(
+    "EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
+)
+EMBEDDING_CACHE_DIR = os.getenv(
+    "EMBEDDING_CACHE_DIR", os.path.join(BASE_DIR, ".cache", "embeddings")
+)
+EMBEDDING_LOCAL_ONLY = os.getenv("EMBEDDING_LOCAL_ONLY", "false").lower() == "true"
+
+
+class RAGStartupError(RuntimeError):
+    """Raised when the local retrieval system is not ready to serve queries."""
+
+
+class RAGConfigurationError(RuntimeError):
+    """Raised when an application secret or runtime setting is missing."""
 
 
 class OrganicRAG:
 
     def __init__(self):
-        self.embedding_model = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
-        )
+        try:
+            self.embedding_model = HuggingFaceEmbeddings(
+                model_name=EMBEDDING_MODEL,
+                cache_folder=EMBEDDING_CACHE_DIR,
+                model_kwargs={"local_files_only": EMBEDDING_LOCAL_ONLY},
+                encode_kwargs={"normalize_embeddings": True},
+            )
+        except Exception as exc:
+            raise RAGStartupError(
+                "The embedding model could not be loaded. Check Hugging Face access "
+                "or pre-download the model during deployment."
+            ) from exc
+
         self.reload_db()
+        if self.get_stats()["total_chunks"] == 0:
+            raise RAGStartupError(
+                "The knowledge base is empty. Run `python rebuild_db.py` to index the PDFs."
+            )
 
     def reload_db(self):
         self.vector_db = Chroma(
@@ -41,6 +72,11 @@ class OrganicRAG:
             return {"total_chunks": 0}
 
     def ask(self, question, top_k=5, temperature=0.0):
+        if not os.getenv("GOOGLE_API_KEY"):
+            raise RAGConfigurationError(
+                "GOOGLE_API_KEY is not configured. Add it to .env or your deployment secrets."
+            )
+
         llm = ChatGoogleGenerativeAI(
             model="gemini-3.6-flash",
             temperature=temperature

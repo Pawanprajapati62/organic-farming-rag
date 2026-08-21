@@ -6,7 +6,7 @@ import streamlit as st
 
 # Add src to sys.path
 sys.path.append("src")
-from rag import OrganicRAG
+from rag import OrganicRAG, RAGStartupError
 from utils import format_pages
 
 # 1. Page Configuration
@@ -152,7 +152,16 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 def get_rag():
     return OrganicRAG()
 
-rag = get_rag()
+try:
+    rag = get_rag()
+except RAGStartupError as exc:
+    st.error("The knowledge base is not ready yet.")
+    st.code(str(exc), language=None)
+    st.info(
+        "For local setup, run `.\\.venv\\Scripts\\python.exe rebuild_db.py`. "
+        "For deployment, pre-build the database and persist the embedding cache."
+    )
+    st.stop()
 
 # Initialize session state
 if "messages" not in st.session_state:
